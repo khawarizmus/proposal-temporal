@@ -22,92 +22,94 @@ import * as Temporal from '../../polyfill/lib/temporal.mjs';
 class AdjustableHijriTemporal {
   #temporal;
   #daysToShift;
+  #adjustedDate;
 
   constructor(temporal, calendar = 'islamic-umalqura', daysToShift = 0) {
     this.#temporal = temporal.withCalendar(calendar);
     this.#daysToShift = daysToShift;
-  }
-
-  #getAdjustedDate() {
-    return this.#temporal.add({ days: this.#daysToShift });
+    this.#adjustedDate = this.#temporal.add({ days: this.#daysToShift });
   }
 
   get day() {
-    return this.#getAdjustedDate().day;
+    return this.#adjustedDate.day;
+  }
+  get dayOfWeek() {
+    return this.#temporal.dayOfWeek;
   }
   get dayOfYear() {
-    return this.#getAdjustedDate().dayOfYear;
+    return this.#adjustedDate.dayOfYear;
   }
   get daysInMonth() {
-    return this.#getAdjustedDate().daysInMonth;
+    return this.#adjustedDate.daysInMonth;
   }
   get daysInYear() {
-    return this.#getAdjustedDate().daysInYear;
+    return this.#adjustedDate.daysInYear;
   }
   get month() {
-    return this.#getAdjustedDate().month;
+    return this.#adjustedDate.month;
   }
   get monthCode() {
-    return this.#getAdjustedDate().monthCode;
+    return this.#adjustedDate.monthCode;
   }
   get monthsInYear() {
-    return this.#getAdjustedDate().monthsInYear;
+    return this.#adjustedDate.monthsInYear;
   }
   get year() {
-    return this.#getAdjustedDate().year;
+    return this.#adjustedDate.year;
   }
   get inLeapYear() {
-    return this.#getAdjustedDate().inLeapYear;
+    return this.#adjustedDate.inLeapYear;
   }
 
   toString(options) {
-    return this.#getAdjustedDate().toString(options);
+    return this.#adjustedDate.toString(options);
   }
 
   toJSON() {
-    return this.#getAdjustedDate().toJSON();
+    return this.#adjustedDate.toJSON();
   }
 
   toLocaleString(locales, options) {
-    return this.#getAdjustedDate().toLocaleString(locales, options);
-  }
-
-  toPlainYearMonth() {
-    return this.#getAdjustedDate().toPlainYearMonth();
-  }
-
-  toPlainMonthDay() {
-    return this.#getAdjustedDate().toPlainMonthDay();
+    const formatter = new Intl.DateTimeFormat(locales, options);
+    const originalParts = formatter.formatToParts(this.#temporal);
+    const adjustedParts = formatter.formatToParts(this.#adjustedDate);
+    for (let i = 0; i < adjustedParts.length; i++) {
+      if (adjustedParts[i].type === 'weekday') {
+        adjustedParts[i].value = originalParts[i].value;
+        break;
+      }
+    }
+    return adjustedParts.map((part) => part.value).join('');
   }
 
   add(durationLike, options) {
-    return this.#getAdjustedDate().add(durationLike, options);
+    return this.#adjustedDate.add(durationLike, options);
   }
 
   subtract(durationLike, options) {
-    return this.#getAdjustedDate().subtract(durationLike, options);
+    return this.#adjustedDate.subtract(durationLike, options);
   }
 
   until(other, options) {
-    return this.#getAdjustedDate().until(other, options);
+    return this.#adjustedDate.until(other, options);
   }
 
   since(other, options) {
-    return this.#getAdjustedDate().since(other, options);
+    return this.#adjustedDate.since(other, options);
   }
 
   with(dateLike, options) {
-    return this.#getAdjustedDate().with(dateLike, options);
+    return this.#adjustedDate.with(dateLike, options);
   }
 
   withCalendar(calendar) {
-    return this.#getAdjustedDate().withCalendar(calendar);
+    return this.#adjustedDate.withCalendar(calendar);
   }
 
   equals(other) {
-    if (other instanceof AdjustableHijriTemporal) return this.#getAdjustedDate().equals(other.#getAdjustedDate());
+    if (other instanceof AdjustableHijriTemporal) return this.#adjustedDate.equals(other.#adjustedDate);
 
-    return this.#getAdjustedDate().equals(other);
+    return this.#adjustedDate.equals(other);
   }
 }
 
@@ -126,11 +128,11 @@ console.log(
 ); // 30 6 12 1445 Saturday, 30 Dhuʻl-Hijjah 1445 AH
 console.log(
   AHdate.day,
-  Hdate.dayOfWeek,
+  AHdate.dayOfWeek,
   AHdate.month,
   AHdate.year,
   AHdate.toLocaleString('en-SG', {
     dateStyle: 'full',
     calendar: 'islamic-umalqura'
   })
-); // 1 6 1 1446 Sunday, 1 Muharram 1446 AH
+); // 1 6 1 1446 Saturday, 1 Muharram 1446 AH
